@@ -294,12 +294,12 @@ def train_model(args, train_exs: List[SentimentExample], dev_exs: List[Sentiment
     elif args.feats == "UNIGRAM":
         # Add additional preprocessing code here
         feat_extractor = UnigramFeatureExtractor(Indexer())
-    elif args.feats == "BIGRAM":
-        # Add additional preprocessing code here
-        feat_extractor = BigramFeatureExtractor(Indexer())
-    elif args.feats == "BETTER":
-        # Add additional preprocessing code here
-        feat_extractor = BetterFeatureExtractor(Indexer())
+    # elif args.feats == "BIGRAM":
+    #     # Add additional preprocessing code here
+    #     feat_extractor = BigramFeatureExtractor(Indexer())
+    # elif args.feats == "BETTER":
+    #     # Add additional preprocessing code here
+    #     feat_extractor = BetterFeatureExtractor(Indexer())
     else:
         raise Exception(
             "Pass in UNIGRAM, BIGRAM, or BETTER to run the appropriate system")
