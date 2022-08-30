@@ -208,18 +208,18 @@ class LogisticRegressionClassifier(SentimentClassifier):
         
         
 
-    def train(self, train_exs: List[SentimentExample], step):
+    def train(self, train_exs: List[SentimentExample]):
 
         for example in train_exs:
             features = self.extractor.extract_features(example.words, True)
             prediction = self.get_prob(features)
-            self.adjust(features, prediction, example.label, step)
+            self.adjust(features, prediction, example.label)
 
-    def adjust(self, features: Counter, prediction, label, step):
+    def adjust(self, features: Counter, prediction, label):
         diff = label-prediction
         # print([label,prediction,diff])
         for feat in features:
-            self.weights[self.indexer.index_of(feat)] += diff*step
+            self.weights[self.indexer.index_of(feat)] += diff
             
 
     def sigmoid(self, x):
@@ -264,13 +264,11 @@ def train_logistic_regression(train_exs: List[SentimentExample], feat_extractor:
     
     # random.seed(10)
 
-    step = 1
-
     classifier = LogisticRegressionClassifier(feat_extractor)
     for _ in range(20):
         random.shuffle(train_exs)
-        classifier.train(train_exs, step)
-        step *= 1
+        classifier.train(train_exs)
+
 
     # if dev_exs:
     #     for devx in dev_exs[:30]:
