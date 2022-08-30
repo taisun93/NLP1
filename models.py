@@ -301,7 +301,7 @@ def train_model(args, train_exs: List[SentimentExample], dev_exs: List[Sentiment
         feat_extractor = BigramFeatureExtractor(Indexer())
     elif args.feats == "BETTER":
         # Add additional preprocessing code here
-        feat_extractor = BetterFeatureExtractor(Indexer(), dev_exs)
+        feat_extractor = BetterFeatureExtractor(Indexer())
     else:
         raise Exception(
             "Pass in UNIGRAM, BIGRAM, or BETTER to run the appropriate system")
