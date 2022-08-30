@@ -1,6 +1,5 @@
 # models.py
 
-from asyncio.windows_events import NULL
 from sentiment_data import *
 from utils import *
 import string
