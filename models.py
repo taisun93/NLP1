@@ -253,7 +253,7 @@ def train_perceptron(train_exs: List[SentimentExample], feat_extractor: FeatureE
     return classifier
 
 
-def train_logistic_regression(train_exs: List[SentimentExample], feat_extractor: FeatureExtractor, dev_exs: List[SentimentExample]) -> LogisticRegressionClassifier:
+def train_logistic_regression(train_exs: List[SentimentExample], feat_extractor: FeatureExtractor) -> LogisticRegressionClassifier:
     """
     Train a logistic regression model.
     :param train_exs: training set, List of SentimentExample objects
@@ -312,7 +312,7 @@ def train_model(args, train_exs: List[SentimentExample], dev_exs: List[Sentiment
     elif args.model == "PERCEPTRON":
         model = train_perceptron(train_exs, feat_extractor)
     elif args.model == "LR":
-        model = train_logistic_regression(train_exs, feat_extractor, dev_exs)
+        model = train_logistic_regression(train_exs, feat_extractor)
     else:
         raise Exception(
             "Pass in TRIVIAL, PERCEPTRON, or LR to run the appropriate system")
