@@ -57,14 +57,14 @@ class UnigramFeatureExtractor(FeatureExtractor):
         answer = []
         # start = True
         for word in sentence:
-            if word in string.punctuation:
-                continue
+            # if word in string.punctuation:
+            #     continue
             # if not start and not word.islower():
             #     continue
             # start = False
-            word = word.lower()
-            if word in self.blackList:
-                continue
+            # word = word.lower()
+            # if word in self.blackList:
+            #     continue
             self.indexer.add_and_get_index(word)
             answer.append(word)
         
@@ -216,11 +216,11 @@ def train_logistic_regression(train_exs: List[SentimentExample], feat_extractor:
     random.seed(10)
 
     classifier = LogisticRegressionClassifier(feat_extractor)
-    for _ in range(30):
+    for _ in range(15):
         random.shuffle(train_exs)
         classifier.train(train_exs)
 
-    print(classifier.extractor.get_indexer().__len__())
+    # print(classifier.extractor.get_indexer().__len__())
 
     return classifier
 
