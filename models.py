@@ -1,5 +1,6 @@
 # models.py
 
+from asyncio.windows_events import NULL
 from sentiment_data import *
 from utils import *
 import string
@@ -57,20 +58,15 @@ class UnigramFeatureExtractor(FeatureExtractor):
         answer = []
         # start = True
         for word in sentence:
-            # if word in string.punctuation:
-            #     continue
-            # if not start and not word.islower():
-            #     continue
-            # start = False
-            # word = word.lower()
-            # if word in self.blackList:
-            #     continue
+            if word.lower() == 'but':
+                answer = []
+                continue
             self.indexer.add_and_get_index(word)
             answer.append(word)
         
 
 
-        return Counter(set(answer))
+        return Counter(answer)
 
 
 class BigramFeatureExtractor(FeatureExtractor):
@@ -79,16 +75,66 @@ class BigramFeatureExtractor(FeatureExtractor):
     """
 
     def __init__(self, indexer: Indexer):
-        raise Exception("Must be implemented")
+        self.indexer = indexer
+        # self.blackList = ['in', 'is', 'the', 'and']
 
+    def get_indexer(self) -> Indexer:
+        return self.indexer
 
+    def extract_features(self, sentence: List[str], add_to_indexer: bool = False) -> Counter:
+        """
+        Extract features from a sentence represented as a list of words. Includes a flag add_to_indexer to
+        :param sentence: words in the example to featurize
+        :param add_to_indexer: True if we should grow the dimensionality of the featurizer if new features are encountered.
+        At test time, any unseen features should be discarded, but at train time, we probably want to keep growing it.
+        :return: A feature vector. We suggest using a Counter[int], which can encode a sparse feature vector (only
+        a few indices have nonzero value) in essentially the same way as a map. However, you can use whatever data
+        structure you prefer, since this does not interact with the framework code.
+        """
+
+        answer = []
+        for i, word in enumerate(sentence):
+            bigram = word+"|"+sentence[i]
+            self.indexer.add_and_get_index(bigram)
+            answer.append(bigram)
+        
+        return Counter(answer)
 class BetterFeatureExtractor(FeatureExtractor):
     """
     Better feature extractor...try whatever you can think of!
     """
 
+
     def __init__(self, indexer: Indexer):
-        raise Exception("Must be implemented")
+        self.indexer = indexer
+        self.blackList = ['in', 'is', 'the', 'and']
+
+    def get_indexer(self) -> Indexer:
+        return self.indexer
+
+    def extract_features(self, sentence: List[str], add_to_indexer: bool = False) -> Counter:
+        """
+        Extract features from a sentence represented as a list of words. Includes a flag add_to_indexer to
+        :param sentence: words in the example to featurize
+        :param add_to_indexer: True if we should grow the dimensionality of the featurizer if new features are encountered.
+        At test time, any unseen features should be discarded, but at train time, we probably want to keep growing it.
+        :return: A feature vector. We suggest using a Counter[int], which can encode a sparse feature vector (only
+        a few indices have nonzero value) in essentially the same way as a map. However, you can use whatever data
+        structure you prefer, since this does not interact with the framework code.
+        """
+
+        answer = []
+        # start = True
+        for word in sentence:
+            if word.lower() == 'but':
+                answer = []
+                continue
+            self.indexer.add_and_get_index(word)
+            answer.append(word)
+        
+
+
+        return Counter(answer)
 
 
 class SentimentClassifier(object):
@@ -124,6 +170,7 @@ class PerceptronClassifier(SentimentClassifier):
         self.weights = [0]*100000
         self.extractor = featureExtractor
         self.indexer = featureExtractor.get_indexer()
+ 
 
     def train(self, train_exs: List[SentimentExample]):
         for example in train_exs:
@@ -159,18 +206,20 @@ class LogisticRegressionClassifier(SentimentClassifier):
         self.extractor = featureExtractor
         self.indexer = featureExtractor.get_indexer()
         
+        
 
-    def train(self, train_exs: List[SentimentExample]):
+    def train(self, train_exs: List[SentimentExample], step):
+
         for example in train_exs:
             features = self.extractor.extract_features(example.words, True)
             prediction = self.get_prob(features)
-            self.adjust(features, prediction, example.label)
+            self.adjust(features, prediction, example.label, step)
 
-    def adjust(self, features: Counter, prediction, label):
+    def adjust(self, features: Counter, prediction, label, step):
         diff = label-prediction
         # print([label,prediction,diff])
         for feat in features:
-            self.weights[self.indexer.index_of(feat)] += diff
+            self.weights[self.indexer.index_of(feat)] += diff*step
             
 
     def sigmoid(self, x):
@@ -204,7 +253,7 @@ def train_perceptron(train_exs: List[SentimentExample], feat_extractor: FeatureE
     return classifier
 
 
-def train_logistic_regression(train_exs: List[SentimentExample], feat_extractor: FeatureExtractor) -> LogisticRegressionClassifier:
+def train_logistic_regression(train_exs: List[SentimentExample], feat_extractor: FeatureExtractor, dev_exs: List[SentimentExample]) -> LogisticRegressionClassifier:
     """
     Train a logistic regression model.
     :param train_exs: training set, List of SentimentExample objects
@@ -213,14 +262,20 @@ def train_logistic_regression(train_exs: List[SentimentExample], feat_extractor:
     """
 
     
-    random.seed(10)
+    # random.seed(10)
+
+    step = 1
 
     classifier = LogisticRegressionClassifier(feat_extractor)
-    for _ in range(15):
+    for _ in range(20):
         random.shuffle(train_exs)
-        classifier.train(train_exs)
+        classifier.train(train_exs, step)
+        step *= 1
 
-    # print(classifier.extractor.get_indexer().__len__())
+    # if dev_exs:
+    #     for devx in dev_exs[:30]:
+    #         if classifier.predict(devx.words)!=devx.label:
+    #             print(devx)
 
     return classifier
 
@@ -246,7 +301,7 @@ def train_model(args, train_exs: List[SentimentExample], dev_exs: List[Sentiment
         feat_extractor = BigramFeatureExtractor(Indexer())
     elif args.feats == "BETTER":
         # Add additional preprocessing code here
-        feat_extractor = BetterFeatureExtractor(Indexer())
+        feat_extractor = BetterFeatureExtractor(Indexer(), dev_exs)
     else:
         raise Exception(
             "Pass in UNIGRAM, BIGRAM, or BETTER to run the appropriate system")
@@ -257,7 +312,7 @@ def train_model(args, train_exs: List[SentimentExample], dev_exs: List[Sentiment
     elif args.model == "PERCEPTRON":
         model = train_perceptron(train_exs, feat_extractor)
     elif args.model == "LR":
-        model = train_logistic_regression(train_exs, feat_extractor)
+        model = train_logistic_regression(train_exs, feat_extractor, dev_exs)
     else:
         raise Exception(
             "Pass in TRIVIAL, PERCEPTRON, or LR to run the appropriate system")
