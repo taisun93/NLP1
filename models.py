@@ -197,7 +197,7 @@ def train_perceptron(train_exs: List[SentimentExample], feat_extractor: FeatureE
     # random.seed(10)
     
     classifier = PerceptronClassifier(feat_extractor)
-    for _ in range(2):
+    for _ in range(20):
         random.shuffle(train_exs)
         classifier.train(train_exs)
 
